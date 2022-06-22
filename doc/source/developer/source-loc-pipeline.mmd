@@ -1,0 +1,30 @@
+%%{init: {'theme':'neutral'}}%%
+graph BT
+
+    classDef DevUNIT fill:#78e4ff,stroke:#333,stroke-width:1px;
+    classDef EXTERN fill:red;
+
+    subgraph Input
+    MEG-Data --format?--> Viewer{{3D Viewer}}
+    MRT-Scans --.nifti--> Viewer
+    end
+    subgraph Segmentation-Registration
+    Viewer --Align MEG MRT--> HM{{HeadModel}}
+    HM --> FreeSurfer
+    HM --> MNE
+    MNE{{MNE-imports}} --> Segm1(Voxel-Segmentation)
+    FreeSurfer --> Segm2(Surface-Segmentation)
+    Segm1-.-Segm2
+    Segm1 -->Atlas{{Atlas Registration}}
+    Segm2 -->Atlas
+    HCMMP --> Atlas
+    end
+    subgraph SourceLoc
+    Atlas -->LF{{"LeadField (inverse problem)"}}
+    LF --> BF{{"BeamForming(DICS,LCMV)"}}
+    BF-->FilterMatrix["Filter Matrix"]
+    end
+
+
+    class Viewer,HM,Segm,Atlas,MNE,BF,LF DevUNIT;
+    class FreeSurfer,HCMMP EXTERN;
