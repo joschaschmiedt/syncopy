@@ -1,13 +1,16 @@
 %%{init: {'theme':'neutral'}}%%
 graph BT
 
+    %% projected development sub-units
     classDef DevUNIT fill:#78e4ff,stroke:#333,stroke-width:1px;
+    %% external dependencies
     classDef EXTERN fill:red;
 
     subgraph Input
     MEG-Data --format?--> Viewer{{3D Viewer}}
     MRT-Scans --.nifti--> Viewer
     end
+    
     subgraph Segmentation-Registration
     Viewer --Align MEG MRT--> HM{{HeadModel}}
     HM --> FreeSurfer
@@ -19,6 +22,7 @@ graph BT
     Segm2 -->Atlas
     HCMMP --> Atlas
     end
+    
     subgraph SourceLoc
     Atlas -->LF{{"LeadField (inverse problem)"}}
     LF --> BF{{"BeamForming(DICS,LCMV)"}}
