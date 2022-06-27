@@ -5,30 +5,41 @@ graph BT
     classDef DevUNIT fill:#78e4ff,stroke:#333,stroke-width:1px;
     %% external dependencies
     classDef EXTERN fill:red;
+    %% input data
+    classDef DATA fill:#1010EE33;
 
     subgraph Input
-    MEG-Data --format?--> Viewer{{3D Viewer}}
-    MRT-Scans --.nifti--> Viewer
+    MEG-Data
+    T1-weighted_MRI
+    T2-weighted_MRI
     end
     
-    subgraph Segmentation-Registration
-    Viewer --Align MEG MRT--> HM{{HeadModel}}
-    HM --> FreeSurfer
-    HM --> MNE
-    MNE{{MNE-imports}} --> Segm1(Voxel-Segmentation)
-    FreeSurfer --> Segm2(Surface-Segmentation)
-    Segm1-.-Segm2
-    Segm1 -->Atlas{{Atlas Registration}}
-    Segm2 -->Atlas
-    HCMMP --> Atlas
+    subgraph FreeSurfer Recon-all Pipeline
+    T1-weighted_MRI --> preproc_and_skull_stripping
+    T2-weighted_MRI --> preproc_and_skull_stripping
+    preproc_and_skull_stripping --> voxel_segmentation
+    voxel_segmentation --> mesh_reconstruction
+    mesh_reconstruction --> head_model
+    mesh_reconstruction --> registration_to_standard_space
+    registration_to_standard_space --> apply_atlas
+    apply_atlas --map back--> head_model
+    head_model
+    end
+    
+    
+    subgraph Align using MNE
+    MEG-Data --> 3D_Viewer
+    head_model --> 3D_Viewer
+    3D_Viewer --alignment--> Aligned_Data
     end
     
     subgraph SourceLoc
-    Atlas -->LF{{"LeadField (inverse problem)"}}
+    Aligned_Data -->LF{{"LeadField (inverse problem)"}}
     LF --> BF{{"BeamForming(DICS,LCMV)"}}
     BF-->FilterMatrix["Filter Matrix"]
     end
 
 
     class Viewer,HM,Segm,Atlas,MNE,BF,LF DevUNIT;
-    class FreeSurfer,HCMMP EXTERN;
+    class FreeSurfer,3D_Viewer EXTERN;
+    class MEG-Data,T1-weighted_MRI,T2-weighted_MRI,Aligned_Data,FilterMatrix,head_model DATA;
