@@ -34,8 +34,8 @@ graph BT
     end
     
     subgraph SourceLoc
-    Aligned_Data -->LF{{"LeadField (inverse problem)"}}
-    LF --> BF{{"BeamForming(DICS,LCMV)"}}
+    Aligned_Data -->LF{{"LeadField (forward problem)"}}
+    LF --inverse problem--> BF{{"BeamForming(DICS,LCMV)"}}
     BF-->FilterMatrix["Filter Matrix"]
     end
 
