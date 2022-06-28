@@ -37,6 +37,7 @@ graph BT
     Aligned_Data -->LF{{"LeadField (forward problem)"}}
     LF --inverse problem--> BF{{"BeamForming(DICS,LCMV)"}}
     BF-->FilterMatrix["Filter Matrix"]
+    MEG-Data --Covariance/Coherence--> BF
     end
 
 
