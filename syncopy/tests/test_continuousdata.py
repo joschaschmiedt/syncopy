@@ -642,6 +642,78 @@ class TestAnalogData():
                         assert np.array_equal(out.data, selected.data)
                         time.sleep(0.001)
 
+    # test inter-trial data-selection
+    @pytest.mark.skip(reason="not implemented yet")
+    def test_intertrialselection(self, fulltests):
+
+        # Create "nasty" trialdef
+        trlLoc = np.array([[3, 5, 1, np.pi],       # do not start at 0
+                           [8, 10, 1, np.pi],      # start gap
+                           [10, 12, 1, np.pi],     # stop gap
+                           [15, 25, 1, np.pi],     # start gap + overlap post
+                           [20, 25, 1, np.pi],     # overlap pre
+                           [29, 30, 1, np.pi]])    # short, last sample included
+
+        # Create testing objects (regular and swapped dimords)
+        dummy = AnalogData(data=self.data,
+                           trialdefinition=trlLoc,
+                           samplerate=1.0)
+        ymmud = AnalogData(data=self.data.T,
+                           trialdefinition=trlLoc,
+                           samplerate=1.0,
+                           dimord=AnalogData._defaultDimord[::-1])
+
+        # Define custom trial selections to test inter-trial data preservation
+        trlSels = ["all",               # should yield identical results to self.trl even with `inter_trialdata = True`
+                   [0, 2, 3],           # trials not consecutive, no inter-trial data selected
+                   [0, 2, 3, 5, 5, 4],  # some trials not consecutive only some inter-trial data selected
+                   [3, 1, 2],           # some trials not consecutive only some inter-trial data selected
+                   [0, 5, 5, 3]         # trials not consecutive, no inter-trial data selected
+                  ]
+
+        # Randomly pick selection unless tests are run with `--full`
+        if fulltests:
+            chanSels = chanSelections
+            timeSels = timeSelections
+        else:
+            chanSels = [random.choice(chanSelections)]
+            timeSels = [random.choice(timeSelections)]
+
+        for obj in [dummy, ymmud]:
+            idx = [slice(None)] * len(obj.dimord)
+            timeIdx = obj.dimord.index("time")
+            chanIdx = obj.dimord.index("channel")
+            for chanSel in chanSels:
+                for timeSel in timeSels:
+                    for trialSel in trlSels:
+                        kwdict = {}
+                        kwdict["trials"] = trialSel
+                        kwdict["channel"] = chanSel
+                        kwdict[timeSel[0]] = timeSel[1]
+
+                        selected = obj.selectdata(inter_trialdata=True, **kwdict)
+                        reference = obj.selectdata(inter_trialdata=True, **kwdict)
+
+                        if isinstance(trialSel, str):
+                            assert selected == reference
+
+                        cfg = StructDict(kwdict)
+                        # data selection via class-method + `Selector` instance for indexing
+                        selected = obj.selectdata(**kwdict)
+                        time.sleep(0.001)
+                        selector = Selector(obj, kwdict)
+                        idx[chanIdx] = selector.channel
+                        for tk, trialno in enumerate(selector.trials):
+                            idx[timeIdx] = selector.time[tk]
+                            assert np.array_equal(selected.trials[tk].squeeze(),
+                                                  obj.trials[trialno][idx[0], :][:, idx[1]].squeeze())
+                        cfg.data = obj
+                        # data selection via package function and `cfg`: ensure equality
+                        out = selectdata(cfg)
+                        assert np.array_equal(out.channel, selected.channel)
+                        assert np.array_equal(out.data, selected.data)
+                        time.sleep(0.001)
+
     # test arithmetic operations
     def test_ang_arithmetic(self, fulltests):
 
